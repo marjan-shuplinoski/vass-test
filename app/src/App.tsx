@@ -107,11 +107,6 @@ const App: React.FC = () => {
             <input className="form-control" placeholder="Content" value={content} onChange={e => setContent(e.target.value)} required />
           </div>
         )}
-        {(type === 'temporary') && (
-          <div className="col-md-4">
-            <input className="form-control" placeholder="(No content for temporary)" value={''} disabled />
-          </div>
-        )}
         <div className="col-md-2">
           <select className="form-select" value={type} onChange={e => setType(e.target.value as any)}>
             <option value="temporary">Temporary</option>

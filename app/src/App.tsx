@@ -20,13 +20,13 @@ const App: React.FC = () => {
   const [duration, setDuration] = useState(5);
 
   const addNotification = () => {
-    if (!content.trim() || notifications.length >= MAX_NOTIFICATIONS) return;
+    if ((type === 'permanent' && !content.trim()) || notifications.length >= MAX_NOTIFICATIONS) return;
     const id = Date.now();
     const newNotification: Notification = {
       id,
       type,
       title: title.trim() ? title : undefined,
-      content,
+      content: type === 'permanent' ? content : '',
       duration: type === 'temporary' ? duration : undefined,
     };
     setNotifications((prev) => [...prev, newNotification]);
@@ -61,15 +61,16 @@ const App: React.FC = () => {
       const randomTemporary: Notification = {
         id: randomId2,
         type: 'temporary',
-        title: 'Temporary',
+        title: 'Notifications may extend two across lines. We prefer to keep them concise.',
         content: 'This is a temporary notification.',
         duration: 5,
       };
       setNotifications([randomPermanent, randomTemporary]);
       setTimeout(() => {
-        setNotifications((prev) => prev.filter((n) => n.id !== randomId2));
-      }, 5000);
+        setNotifications((prev) => prev.filter((n) => n.type !== 'temporary' || n.id !== randomId2));
+      }, randomTemporary.duration! * 1000);
     }
+    // eslint-disable-next-line
   }, []);
 
   return (
@@ -79,9 +80,14 @@ const App: React.FC = () => {
         <div className="col-md-3">
           <input className="form-control" placeholder="Title (optional)" value={title} onChange={e => setTitle(e.target.value)} />
         </div>
-        {type === 'permanent' && (
+        {(type === 'permanent') && (
           <div className="col-md-4">
             <input className="form-control" placeholder="Content" value={content} onChange={e => setContent(e.target.value)} required />
+          </div>
+        )}
+        {(type === 'temporary') && (
+          <div className="col-md-4">
+            <input className="form-control" placeholder="(No content for temporary)" value={''} disabled />
           </div>
         )}
         <div className="col-md-2">
@@ -101,26 +107,107 @@ const App: React.FC = () => {
       </form>
       <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 9999, minWidth: 320 }}>
         {notifications.map((n) => (
-          <div key={n.id} className={`alert alert-${n.type === 'permanent' ? 'warning' : 'info'} fade show mb-2 animate__animated animate__fadeInUp`} style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)', minWidth: 300, maxWidth: 400, position: 'relative' }}>
-            {n.title && (
-              <strong style={{ fontWeight: n.type === 'permanent' ? 'bold' : 'normal' }}>{n.title}</strong>
-            )}
-            {n.type === 'permanent' && <><br />{n.content}</>}
-            {/* Close button for permanent notification at bottom right */}
-            {(n.type === 'permanent') && (
-              <button type="button" className="btn-close" aria-label="Close" style={{ position: 'absolute', bottom: 10, right: 10 }} onClick={() => removeNotification(n.id)}></button>
-            )}
-            {n.type === 'temporary' && (
-              <div className="progress mt-2" style={{ height: 4 }}>
-                <div className="progress-bar bg-info" role="progressbar" style={{ width: '100%', animation: `progressBar${n.id} ${n.duration}s linear` }}></div>
-                <style>{`
-                  @keyframes progressBar${n.id} {
-                    from { width: 100%; }
-                    to { width: 0%; }
-                  }
-                `}</style>
+          <div
+            key={n.id}
+            className={`alert alert-${n.type === 'permanent' ? 'warning' : 'info'} fade show mb-2 animate__animated animate__fadeInUp`}
+            style={{
+              width: 480,
+              height: n.type === 'permanent' ? 100 : 68,
+              borderRadius: 8,
+              border: '1px solid #E2E8F0',
+              background: '#FFFFFF',
+              padding: 16,
+              gap: n.type === 'permanent' ? 16 : 8,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-start',
+              alignItems: 'flex-start',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              maxWidth: 480,
+              minWidth: 320,
+              position: 'relative',
+            }}
+          >
+            {n.title && n.type === 'permanent' && (
+              <div style={{
+                width: 480,
+                height: 36,
+                display: 'flex',
+                alignItems: 'center',
+                fontFamily: 'Geist Mono, monospace',
+                fontWeight: 400,
+                fontSize: 'small',
+                lineHeight: 1,
+                letterSpacing: 0,
+                color: '#000',
+                marginBottom: 0,
+                gap: 16,
+              }}>
+                {n.title}
               </div>
             )}
+            {n.type === 'permanent' && (
+              <div style={{
+                width: 396,
+                height: 36,
+                display: 'flex',
+                alignItems: 'center',
+                fontFamily: 'Geist Mono, monospace',
+                fontWeight: 400,
+                fontSize: 'small',
+                lineHeight: 1,
+                letterSpacing: 0,
+                color: '#000',
+                verticalAlign: 'middle',
+                gap: 16,
+                position: 'relative',
+              }}>
+                <span style={{ width: 396, height: 36, display: 'flex', alignItems: 'center' }}>{n.content}</span>
+              </div>
+            )}
+            {n.type === 'permanent' && (
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Close"
+                style={{
+                  width: 36,
+                  height: 36,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  opacity: 0.7,
+                  transition: 'opacity 0.2s',
+                  marginLeft: 8,
+                  position: 'absolute',
+                  right: 16,
+                  top: 42, // 36 (title) + gap (16)
+                }}
+                onMouseOver={e => (e.currentTarget.style.opacity = '1')}
+                onMouseOut={e => (e.currentTarget.style.opacity = '0.7')}
+                onClick={() => removeNotification(n.id)}
+              ></button>
+            )}
+            {n.type !== 'permanent' && n.title && (
+              <div style={{
+                width: 448,
+                height: 36,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'normal',
+                fontFamily: 'Geist Mono, monospace',
+                fontSize: 'small',
+                color: '#000',
+                gap: 16,
+              }}>
+                {n.title}
+              </div>
+            )}
+            {/* Remove content for temporary notification */}
+            {n.type === 'temporary' && n.content && false}
+            {/* Remove progress bar for temporary notification */}
           </div>
         ))}
       </div>
